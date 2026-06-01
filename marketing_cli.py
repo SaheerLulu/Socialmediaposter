@@ -69,6 +69,33 @@ def cmd_import(args) -> int:
     return 0
 
 
+def cmd_prospect(args) -> int:
+    from social_poster.marketing.prospect import prospect_companies, read_url_list
+
+    urls = list(args.urls)
+    if args.file:
+        urls += read_url_list(args.file)
+    if not urls:
+        print("Provide one or more company URLs, or --file urls.txt")
+        return 1
+    store = make_store()
+    print(f"Crawling {len(urls)} company site(s) for published business contacts "
+          f"(role-based, robots-aware)…")
+    summary = prospect_companies(
+        urls, store, consent=args.consent,
+        include_personal=args.include_personal, preview=args.preview,
+    )
+    import json as _json
+
+    print(_json.dumps(summary, indent=2))
+    if args.preview:
+        print("\n(preview only — nothing imported; drop --preview to save)")
+    else:
+        print(f"\nImported {summary['imported']} company lead(s) under "
+              f"'{args.consent}'. Review before any outreach; opt-out is included.")
+    return 0
+
+
 def cmd_enrich(args) -> int:
     from social_poster.marketing.enrich import build_profile_from_site
 
@@ -150,6 +177,17 @@ def main() -> int:
     p_enr.add_argument("url")
     p_enr.add_argument("--save", action="store_true", help="write data/business_profile.yaml")
     p_enr.set_defaults(func=cmd_enrich)
+
+    p_pro = sub.add_parser("prospect",
+                           help="extract published business contacts from company websites (B2B)")
+    p_pro.add_argument("urls", nargs="*", help="company website URLs")
+    p_pro.add_argument("--file", help="file of newline-separated company URLs")
+    p_pro.add_argument("--consent", default="legitimate_interest",
+                       help="lawful basis to record (default: legitimate_interest)")
+    p_pro.add_argument("--include-personal", action="store_true",
+                       help="also accept named-individual emails (default: role inboxes only)")
+    p_pro.add_argument("--preview", action="store_true", help="show findings without importing")
+    p_pro.set_defaults(func=cmd_prospect)
 
     p_run = sub.add_parser("run", help="run one outreach batch")
     p_run.add_argument("--auto-approve", action="store_true")
