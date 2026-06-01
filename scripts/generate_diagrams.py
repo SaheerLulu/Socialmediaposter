@@ -134,7 +134,70 @@ def main() -> None:
     plt.tight_layout()
     plt.savefig(out, dpi=150, facecolor=PAPER, bbox_inches="tight")
     print(f"wrote {out}")
+    plt.close(fig)
+
+
+def marketing() -> None:
+    """DealDesk sales & marketing module diagram -> docs/marketing_architecture.png."""
+    fig, ax = plt.subplots(figsize=(13, 8.5))
+    fig.patch.set_facecolor(PAPER)
+    ax.set_facecolor(PAPER)
+    ax.set_xlim(0, 13)
+    ax.set_ylim(0, 9)
+    ax.axis("off")
+
+    ax.text(0.4, 8.55, "DealDesk", fontsize=26, fontweight="bold", color=INK)
+    ax.text(0.4, 8.15,
+            "24/7 autonomous outbound sales · consent-aware · human-in-the-loop",
+            fontsize=12, color=SLATE)
+
+    sched = _box(ax, (0.4, 6.6), 2.6, 1.1,
+                 "Scheduler daemon\n24/7 · quiet hours\nrate caps · cadence", AMBER, fs=10)
+    biz = _box(ax, (0.4, 4.9), 2.6, 1.0, "Business profile\n(who we are,\nwhat we sell)", SLATE, fs=10)
+    crm = _box(ax, (0.4, 3.0), 2.6, 1.2,
+               "CRM / Lead store\nconsent · suppression\ntouches · follow-ups", SLATE, fs=10)
+
+    agent = _box(ax, (4.0, 6.0), 4.8, 1.5,
+                 "DealDesk Deep Agent\nsegment → personalize → send\nplanning · sub-agents", INDIGO)
+    writer = _box(ax, (5.0, 4.2), 2.8, 0.95, "copywriter\nsub-agent", TEAL, fs=10)
+
+    govern = _box(ax, (4.0, 2.4), 4.8, 1.0,
+                  "Eligibility + throttle guard\nconsent · caps · quiet hours", PINK, fs=10)
+    gate = _box(ax, (4.0, 0.7), 4.8, 1.0,
+                "[ STOP ]  Human Approval Gate\napprove / edit / reject each message", PINK, fs=11)
+
+    email = _box(ax, (9.9, 5.2), 2.7, 1.0, "Email channel\n(SMTP)", INK, fs=10)
+    wa = _box(ax, (9.9, 3.6), 2.7, 1.0, "WhatsApp channel\n(Meta / Twilio)", INK, fs=10)
+    ext = _box(ax, (9.9, 1.0), 2.7, 1.6, "Prospects\n\n(opted-in\ncontacts)", SLATE, fs=10)
+
+    _arrow(ax, (sched[0], 6.6), (4.0, 6.7), color=AMBER, lw=2.2)
+    _arrow(ax, (biz[0] + 1.3, 5.4), (4.0, 6.4), color=SLATE)
+    _arrow(ax, (crm[0] + 1.3, 4.2), (4.0, 6.1), color=SLATE)
+    _arrow(ax, (agent[0], 6.0), (writer[0], 5.15), color=TEAL)
+    _arrow(ax, (agent[0], 6.0), (govern[0], 3.4), color=PINK, lw=2.2)
+    _arrow(ax, (govern[0], 2.4), (gate[0], 1.7), color=PINK, lw=2.2)
+    _arrow(ax, (gate[0] + 2.4, 1.2), (9.9, 4.0), color=INK)
+    _arrow(ax, (gate[0] + 2.4, 1.4), (9.9, 5.6), color=INK)
+    _arrow(ax, (email[0], 5.2), (ext[0], 2.6), color=SLATE, ls="--", lw=1.4)
+    _arrow(ax, (wa[0], 3.6), (ext[0] + 0.2, 2.6), color=SLATE, ls="--", lw=1.4)
+
+    handles = [
+        mpatches.Patch(color=AMBER, label="24/7 scheduler"),
+        mpatches.Patch(color=INDIGO, label="Sales agent"),
+        mpatches.Patch(color=TEAL, label="Copywriter sub-agent"),
+        mpatches.Patch(color=PINK, label="Compliance + approval"),
+        mpatches.Patch(color=INK, label="Channels / prospects"),
+    ]
+    ax.legend(handles=handles, loc="lower left", bbox_to_anchor=(0.0, -0.02),
+              ncol=3, frameon=False, fontsize=9)
+
+    out = DOCS / "marketing_architecture.png"
+    plt.tight_layout()
+    plt.savefig(out, dpi=150, facecolor=PAPER, bbox_inches="tight")
+    print(f"wrote {out}")
+    plt.close(fig)
 
 
 if __name__ == "__main__":
     main()
+    marketing()

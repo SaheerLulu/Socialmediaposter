@@ -1,0 +1,24 @@
+# Copy to data/business_profile.yaml and edit. This is what the sales agent
+# reads to "understand your business". Plain JSON also works in this file.
+name: "BiLoop AI"
+one_liner: "Agentic automation for marketing and sales teams."
+description: >
+  We build AI agents that plan, draft, and run social campaigns and outbound
+  outreach end-to-end, with a human approval step so teams stay in control.
+products:
+  - "PostPilot — agentic social media posting"
+  - "DealDesk — autonomous outbound sales agent"
+value_props:
+  - "Go from a single brief to approved, on-brand posts in minutes"
+  - "Personalized outreach at scale with consent and compliance built in"
+  - "Human-in-the-loop approval on everything that ships"
+ideal_customer: "B2B SMBs and agencies that want to scale content & outreach without hiring"
+target_industries:
+  - "SaaS"
+  - "Agencies"
+  - "E-commerce"
+tone: "warm, concise, professional, helpful — never spammy"
+website: "https://biloop.ai"
+cta: "Reply here or grab 15 minutes: https://biloop.ai/demo"
+sender_name: "Saheer"
+sender_title: "Founder, BiLoop AI"
