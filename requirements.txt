@@ -10,6 +10,7 @@ pillow>=10.0
 numpy>=1.26
 matplotlib>=3.8                # architecture diagram generation
 python-dotenv>=1.0
+pyyaml>=6.0                    # business profile (DealDesk marketing module)
 
 # Optional image generation providers (only needed if you use them)
 openai>=1.40 ; extra == "images"

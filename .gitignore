@@ -11,7 +11,13 @@ env/
 
 # Runtime artifacts
 outbox/*.json
+outbox/marketing/*.json
 assets/hero-*.png
+
+# Live CRM data & business profile (keep the .example files)
+data/leads.json
+data/business_profile.yaml
+data/business_profile.yml
 
 # OS / editor
 .DS_Store

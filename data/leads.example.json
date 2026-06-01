@@ -1,0 +1,36 @@
+[
+  {
+    "id": "L001",
+    "name": "Priya Nair",
+    "email": "priya@acmeretail.example",
+    "whatsapp": "+919800000001",
+    "company": "Acme Retail",
+    "role": "Head of Marketing",
+    "notes": "Downloaded our pricing guide at a trade show.",
+    "tags": ["retail", "warm"],
+    "consent": "opt_in",
+    "status": "new"
+  },
+  {
+    "id": "L002",
+    "name": "Tom Becker",
+    "email": "tom@brightcafe.example",
+    "company": "Bright Cafe",
+    "role": "Owner",
+    "notes": "Signed up for the newsletter.",
+    "tags": ["food", "smb"],
+    "consent": "opt_in",
+    "status": "new"
+  },
+  {
+    "id": "L003",
+    "name": "Lena Cruz",
+    "whatsapp": "+34600000003",
+    "company": "Cruz Studios",
+    "role": "Founder",
+    "notes": "Asked for a callback via the website form.",
+    "tags": ["agency"],
+    "consent": "opt_in",
+    "status": "new"
+  }
+]
