@@ -20,28 +20,69 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 from social_poster.marketing import runner  # noqa: E402
 from social_poster.marketing.agent import build_sales_agent  # noqa: E402
 from social_poster.marketing.config import marketing_settings  # noqa: E402
-from social_poster.marketing.crm import LeadStore, seed_example_leads  # noqa: E402
+from social_poster.marketing.crm import make_store, seed_example_leads  # noqa: E402
 from social_poster.marketing.scheduler import serve_forever  # noqa: E402
 
 
 def cmd_leads(_args) -> int:
-    store = LeadStore()
+    store = make_store()
     leads = store.all()
     if not leads:
-        print("No leads. Run: python marketing_cli.py seed")
+        print("No leads. Run: python marketing_cli.py seed  (or import)")
         return 0
     for l in leads:
         ch = "/".join(c for c in (("email" if l.email else ""), ("whatsapp" if l.whatsapp else "")) if c)
         print(f"  {l.id}  {l.name:<16} {l.company:<16} consent={l.consent:<8} "
               f"status={l.status:<10} touches={l.touches} [{ch}]")
-    print(f"\n{len(leads)} lead(s).")
+    print(f"\n{len(leads)} lead(s) · backend={marketing_settings.db_backend}.")
     return 0
 
 
 def cmd_seed(_args) -> int:
-    store = LeadStore()
+    store = make_store()
     seed_example_leads(store)
-    print(f"Seeded. {len(store.all())} lead(s) in {store.path}.")
+    print(f"Seeded. {len(store.all())} lead(s) · backend={marketing_settings.db_backend}.")
+    return 0
+
+
+def cmd_db(_args) -> int:
+    from social_poster.marketing.db import init_db
+
+    url = init_db()
+    # mask credentials in the printed URL
+    import re as _re
+
+    safe = _re.sub(r"//[^@/]+@", "//***@", url)
+    print(f"CRM database initialized · {safe}")
+    return 0
+
+
+def cmd_import(args) -> int:
+    from social_poster.marketing.ingest import import_csv, import_json
+
+    store = make_store()
+    fn = import_json if str(args.file).lower().endswith(".json") else import_csv
+    summary = fn(args.file, store, source=args.source or "", default_consent=args.consent)
+    print(f"Import complete: {summary}")
+    if summary.get("skipped"):
+        print("Note: rows skipped (missing email/whatsapp) are not added.")
+    return 0
+
+
+def cmd_enrich(args) -> int:
+    from social_poster.marketing.enrich import build_profile_from_site
+
+    print(f"Crawling {args.url} (your own site) to build the business profile…")
+    result = build_profile_from_site(args.url)
+    import json as _json
+
+    print(_json.dumps(result, indent=2))
+    if args.save:
+        import yaml  # type: ignore
+        from social_poster.marketing.config import marketing_settings as ms
+
+        ms.business_profile_path.write_text(yaml.safe_dump(result["profile"], sort_keys=False))
+        print(f"\nSaved profile -> {ms.business_profile_path}")
     return 0
 
 
@@ -93,12 +134,29 @@ def cmd_daemon(_args) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description="DealDesk — sales & marketing agent")
     sub = ap.add_subparsers(dest="command", required=True)
-    sub.add_parser("leads").set_defaults(func=cmd_leads)
-    sub.add_parser("seed").set_defaults(func=cmd_seed)
-    p_run = sub.add_parser("run")
+
+    sub.add_parser("db", help="create the CRM database tables").set_defaults(func=cmd_db)
+    sub.add_parser("leads", help="list CRM leads").set_defaults(func=cmd_leads)
+    sub.add_parser("seed", help="load example opted-in leads").set_defaults(func=cmd_seed)
+
+    p_imp = sub.add_parser("import", help="import contacts you own (CSV/JSON)")
+    p_imp.add_argument("file")
+    p_imp.add_argument("--source", default="", help="where these contacts came from")
+    p_imp.add_argument("--consent", default=None,
+                       help="default basis if a row has none: opt_in|legitimate_interest|none")
+    p_imp.set_defaults(func=cmd_import)
+
+    p_enr = sub.add_parser("enrich", help="crawl YOUR OWN website to build the business profile")
+    p_enr.add_argument("url")
+    p_enr.add_argument("--save", action="store_true", help="write data/business_profile.yaml")
+    p_enr.set_defaults(func=cmd_enrich)
+
+    p_run = sub.add_parser("run", help="run one outreach batch")
     p_run.add_argument("--auto-approve", action="store_true")
     p_run.set_defaults(func=cmd_run)
-    sub.add_parser("daemon").set_defaults(func=cmd_daemon)
+
+    sub.add_parser("daemon", help="run the 24/7 scheduler").set_defaults(func=cmd_daemon)
+
     args = ap.parse_args()
     return args.func(args)
 

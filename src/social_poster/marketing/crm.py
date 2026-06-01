@@ -112,7 +112,16 @@ class LeadStore:
         self.save()
 
 
-def seed_example_leads(store: LeadStore) -> None:
+def make_store():
+    """Return the configured CRM store: SQL (Postgres) or JSON."""
+    if marketing_settings.db_backend == "sql":
+        from .store_sql import SqlLeadStore
+
+        return SqlLeadStore()
+    return LeadStore()
+
+
+def seed_example_leads(store) -> None:
     """Populate a few opted-in demo leads if the store is empty."""
     if store.all():
         return

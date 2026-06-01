@@ -12,6 +12,11 @@ matplotlib>=3.8                # architecture diagram generation
 python-dotenv>=1.0
 pyyaml>=6.0                    # business profile (DealDesk marketing module)
 
+# CRM database & ingestion (DealDesk)
+sqlalchemy>=2.0               # CRM data model (Postgres in prod, SQLite for dev)
+beautifulsoup4>=4.12          # own-website business-profile enricher
+psycopg[binary]>=3.1 ; extra == "postgres"   # Postgres driver (set DATABASE_URL)
+
 # Optional image generation providers (only needed if you use them)
 openai>=1.40 ; extra == "images"
 langchain-google-genai>=2.0 ; extra == "images"

@@ -15,17 +15,17 @@ from langchain_core.tools import tool
 from .business import load_business_profile
 from .channels import send_email_message, send_whatsapp_message
 from .config import marketing_settings
-from .crm import LeadStore
+from .crm import make_store
 from .governor import governor
 
-# Shared, lazily-loaded CRM store for the running process.
-_store: LeadStore | None = None
+# Shared, lazily-loaded CRM store for the running process (SQL or JSON backend).
+_store = None
 
 
-def get_store() -> LeadStore:
+def get_store():
     global _store
     if _store is None:
-        _store = LeadStore()
+        _store = make_store()
     return _store
 
 

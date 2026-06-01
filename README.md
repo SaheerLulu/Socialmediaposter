@@ -86,10 +86,11 @@ Business profile + CRM ─▶ Scheduler (24/7) ─▶ Sales agent: segment → p
 ```
 
 - **Understands your business.** Edit `data/business_profile.yaml` (see the
-  `.example`); the agent grounds every message in what you actually sell.
-- **CRM with consent built in.** `data/leads.json` tracks each prospect's
-  contact info, **consent** (opt-in / legitimate-interest / none / unsubscribed),
-  status, touches, and follow-up date.
+  `.example`), or auto-fill it by crawling your own site (below).
+- **CRM with consent built in.** A **Postgres** database (or JSON for the demo)
+  tracks each prospect's contact info, **consent** (opt-in / legitimate-interest
+  / none / unsubscribed), status, touches, and follow-up date, plus append-only
+  **consent** and **activity** audit trails.
 - **Personalized, multi-channel outreach.** Email via SMTP, WhatsApp via the
   Meta Cloud API or Twilio — each message written for that specific lead.
 - **Always-on.** `python marketing_cli.py daemon` runs batches on an interval
@@ -114,11 +115,39 @@ python marketing_cli.py daemon               # 24/7 scheduler
 > basis to reach, and honor unsubscribes. The guardrails help; they are not
 > legal advice.
 
+### 🗄️ Building your CRM database
+
+The CRM is a **Postgres** database (set `DATABASE_URL`; falls back to a local
+SQLite file with zero setup). Populate it from sources **you control** — there
+is deliberately **no third-party scraper**: harvesting contacts from social
+media / other people's sites for cold outreach breaks GDPR/CAN-SPAM and the
+platforms' terms, and torches your sending reputation.
+
+```bash
+python marketing_cli.py db                              # create the tables
+python marketing_cli.py import contacts.csv --source crm-export   # import contacts you own
+python marketing_cli.py import contacts.csv --consent opt_in      # set basis for rows w/o one
+python marketing_cli.py enrich https://yourcompany.com --save     # build the business profile from YOUR site
+python marketing_cli.py leads                           # list what's in the CRM
+```
+
+- **Import** accepts CSV or JSON, auto-maps common column names (name, email,
+  phone/whatsapp, company, title, consent, tags), dedupes by email/phone, and
+  records a consent-audit row for every opted-in contact. Rows with no email or
+  phone are skipped. See `data/contacts.example.csv`.
+- **Enrich** politely crawls a handful of pages on **a domain you own**
+  (same-domain only, robots-aware) and uses the LLM to draft your
+  `business_profile.yaml`, capturing your company's own public contact emails.
+- **Lead intake** (`marketing.ingest.capture_lead`) is the hook for your web
+  opt-in / contact form so new sign-ups land in the CRM with consent recorded.
+
 | Component | File | Role |
 | --- | --- | --- |
 | Sales agent | `src/social_poster/marketing/agent.py` | DealDesk deep agent + copywriter sub-agent + send approval gate |
 | Business profile | `marketing/business.py` | Loads who you are / what you sell |
-| CRM | `marketing/crm.py` | Leads, consent, suppression, due/follow-up logic |
+| CRM database | `marketing/db.py` · `store_sql.py` | Postgres schema (leads + consent + activity audit) |
+| Ingestion | `marketing/ingest.py` · `enrich.py` | Import CSV/JSON · web opt-in intake · own-site enricher |
+| CRM logic | `marketing/crm.py` | Consent, suppression, due/follow-up, backend factory |
 | Channels | `marketing/channels/` | Email (SMTP) + WhatsApp (Meta/Twilio), dry-run staging |
 | Governor | `marketing/governor.py` | Rate limits, daily caps, quiet hours |
 | Scheduler | `marketing/scheduler.py` | The 24/7 batch daemon |
@@ -170,6 +199,8 @@ Set `SOCIAL_POSTER_DRY_RUN=false` and fill in the platform credentials in
 | `ANTHROPIC_API_KEY` | — | Default model provider key |
 | `OPENAI_API_KEY` / `GOOGLE_API_KEY` | — | Image generation |
 | `TWITTER_*`, `INSTAGRAM_*`, `LINKEDIN_*` | — | Live posting credentials |
+| `DATABASE_URL` | — | Postgres CRM connection (blank → local SQLite) |
+| `MARKETING_DB_BACKEND` | `sql`/`json` | CRM backend (auto-picks sql when `DATABASE_URL` set) |
 | `MARKETING_DRY_RUN` | `true` | Simulate outreach to `./outbox/marketing` |
 | `MARKETING_REQUIRE_OPT_IN` | `true` | Only contact leads with a lawful basis |
 | `MARKETING_AUTONOMOUS` | `false` | Let the daemon auto-send without approval |
@@ -191,7 +222,9 @@ PYTHONPATH=src python -m pytest -q        # or: python tests/test_core.py
 `test_core.py` covers PostPilot (tools, dry-run pipeline, interrupt parsing,
 agent wiring). `test_marketing.py` covers DealDesk (business profile, CRM
 consent/suppression, governor quiet-hours/caps, dry-run send + follow-up,
-approval wiring). Everything runs **without needing an LLM API key**.
+approval wiring). `test_crm_db.py` covers the SQL CRM database (schema,
+CSV import + dedupe + consent audit, suppression, lead intake) on SQLite.
+Everything runs **without needing an LLM API key** (15 tests total).
 
 ---
 
@@ -209,8 +242,9 @@ approval wiring). Everything runs **without needing an LLM API key**.
 ├── src/social_poster/
 │   ├── agent.py · runner.py · prompts.py · schemas.py · config.py
 │   ├── tools/                   # image_gen + per-platform posting tools
-│   └── marketing/               # DealDesk: agent, crm, channels, governor, scheduler
-└── tests/                       # test_core.py + test_marketing.py
+│   └── marketing/               # DealDesk: agent, crm, db, store_sql, ingest,
+│                                #   enrich, channels, governor, scheduler
+└── tests/                       # test_core.py · test_marketing.py · test_crm_db.py
 ```
 
 ---

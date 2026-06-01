@@ -49,6 +49,15 @@ class MarketingSettings:
     # False: drafts await human approval. Only enable once you trust the copy.
     autonomous: bool = field(default_factory=lambda: _flag("MARKETING_AUTONOMOUS", False))
 
+    # Storage --------------------------------------------------------------- #
+    # Backend for the CRM: "sql" (Postgres/SQLAlchemy) or "json" (file).
+    # Defaults to "sql" when DATABASE_URL is set, else "json".
+    db_backend: str = field(
+        default_factory=lambda: os.getenv(
+            "MARKETING_DB_BACKEND", "sql" if os.getenv("DATABASE_URL") else "json"
+        )
+    )
+
     # Files ----------------------------------------------------------------- #
     leads_path: Path = field(default_factory=lambda: DATA_DIR / "leads.json")
     business_profile_path: Path = field(

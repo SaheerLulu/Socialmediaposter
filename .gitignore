@@ -18,6 +18,8 @@ assets/hero-*.png
 data/leads.json
 data/business_profile.yaml
 data/business_profile.yml
+data/*.db
+data/contacts.csv
 
 # OS / editor
 .DS_Store
