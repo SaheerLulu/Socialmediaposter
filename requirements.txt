@@ -1,0 +1,20 @@
+# Core agent stack
+deepagents>=0.6.7
+langchain>=1.3.0
+langgraph>=1.2.0
+langchain-anthropic>=1.4.0     # default model provider (Claude)
+
+# UI & assets
+streamlit>=1.40
+pillow>=10.0
+numpy>=1.26
+matplotlib>=3.8                # architecture diagram generation
+python-dotenv>=1.0
+
+# Optional image generation providers (only needed if you use them)
+openai>=1.40 ; extra == "images"
+langchain-google-genai>=2.0 ; extra == "images"
+
+# Optional posting clients (only needed when SOCIAL_POSTER_DRY_RUN=false)
+tweepy>=4.14 ; extra == "publish"
+requests>=2.31
