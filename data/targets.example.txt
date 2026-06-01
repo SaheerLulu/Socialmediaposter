@@ -1,0 +1,5 @@
+# Company websites to prospect (one URL per line). Lines starting with # are ignored.
+# Run:  python marketing_cli.py prospect --file data/targets.example.txt --preview
+https://acme.example
+https://globex.example
+https://initech.example

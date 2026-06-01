@@ -118,16 +118,14 @@ python marketing_cli.py daemon               # 24/7 scheduler
 ### 🗄️ Building your CRM database
 
 The CRM is a **Postgres** database (set `DATABASE_URL`; falls back to a local
-SQLite file with zero setup). Populate it from sources **you control** — there
-is deliberately **no third-party scraper**: harvesting contacts from social
-media / other people's sites for cold outreach breaks GDPR/CAN-SPAM and the
-platforms' terms, and torches your sending reputation.
+SQLite file with zero setup). Populate it four ways:
 
 ```bash
 python marketing_cli.py db                              # create the tables
 python marketing_cli.py import contacts.csv --source crm-export   # import contacts you own
-python marketing_cli.py import contacts.csv --consent opt_in      # set basis for rows w/o one
-python marketing_cli.py enrich https://yourcompany.com --save     # build the business profile from YOUR site
+python marketing_cli.py enrich https://yourcompany.com --save     # business profile from YOUR site
+python marketing_cli.py prospect https://acme.com https://globex.com   # B2B contacts from company sites
+python marketing_cli.py prospect --file targets.txt --preview          # preview before importing
 python marketing_cli.py leads                           # list what's in the CRM
 ```
 
@@ -135,18 +133,32 @@ python marketing_cli.py leads                           # list what's in the CRM
   phone/whatsapp, company, title, consent, tags), dedupes by email/phone, and
   records a consent-audit row for every opted-in contact. Rows with no email or
   phone are skipped. See `data/contacts.example.csv`.
-- **Enrich** politely crawls a handful of pages on **a domain you own**
-  (same-domain only, robots-aware) and uses the LLM to draft your
-  `business_profile.yaml`, capturing your company's own public contact emails.
+- **Prospect** crawls **target companies' own websites** (same-domain,
+  robots-aware, polite) and extracts their *published business* contacts — the
+  role inbox they advertise (`info@`, `sales@`, …), switchboard number, company
+  name and blurb. It prefers role inboxes over named individuals
+  (`--include-personal` to override), stores scraped phones as notes (never as a
+  WhatsApp target), and imports under a **legitimate-interest** basis with
+  opt-out included on every email. Use `--preview` to review first.
+- **Enrich** politely crawls a handful of pages on **a domain you own** and uses
+  the LLM to draft your `business_profile.yaml`.
 - **Lead intake** (`marketing.ingest.capture_lead`) is the hook for your web
   opt-in / contact form so new sign-ups land in the CRM with consent recorded.
+
+> 🔎 **Website prospecting vs. social-media scraping.** Extracting a company's
+> *own published business* contact details from *their* website for B2B outreach
+> (under legitimate interest, robots-aware, with opt-out) is supported. What's
+> **not** built — and won't be — is harvesting individuals' personal data from
+> social media or aggregators: that breaks GDPR/CAN-SPAM and LinkedIn/Meta/X
+> terms and wrecks your sending reputation. Do your legitimate-interest
+> assessment and honor opt-outs.
 
 | Component | File | Role |
 | --- | --- | --- |
 | Sales agent | `src/social_poster/marketing/agent.py` | DealDesk deep agent + copywriter sub-agent + send approval gate |
 | Business profile | `marketing/business.py` | Loads who you are / what you sell |
 | CRM database | `marketing/db.py` · `store_sql.py` | Postgres schema (leads + consent + activity audit) |
-| Ingestion | `marketing/ingest.py` · `enrich.py` | Import CSV/JSON · web opt-in intake · own-site enricher |
+| Ingestion | `marketing/ingest.py` · `enrich.py` · `prospect.py` | Import CSV/JSON · web opt-in intake · own-site enricher · company-site prospecting |
 | CRM logic | `marketing/crm.py` | Consent, suppression, due/follow-up, backend factory |
 | Channels | `marketing/channels/` | Email (SMTP) + WhatsApp (Meta/Twilio), dry-run staging |
 | Governor | `marketing/governor.py` | Rate limits, daily caps, quiet hours |
@@ -224,7 +236,9 @@ agent wiring). `test_marketing.py` covers DealDesk (business profile, CRM
 consent/suppression, governor quiet-hours/caps, dry-run send + follow-up,
 approval wiring). `test_crm_db.py` covers the SQL CRM database (schema,
 CSV import + dedupe + consent audit, suppression, lead intake) on SQLite.
-Everything runs **without needing an LLM API key** (15 tests total).
+`test_prospect.py` covers company-website prospecting (role-email detection,
+phone extraction, lead building, import). Everything runs **without needing an
+LLM API key** (20 tests total).
 
 ---
 
